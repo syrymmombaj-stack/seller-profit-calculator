@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Калькулятор прибыли продавца — маркетплейсы</title>
+<meta name="description" content="Бесплатный калькулятор прибыли для продавцов на маркетплейсах. Считает чистую прибыль, маржу и цену безубыточности.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#EDEEE6;
+    --panel:#FFFFFF;
+    --receipt:#FBFBF7;
+    --ink:#1C1C18;
+    --ink-soft:#6B6B60;
+    --rule:#D2D3C6;
+    --rule-strong:#9A9C8E;
+    --profit:#1F6F44;
+    --loss:#B0392D;
+    --gold:#9C6F26;
+    --sans:'IBM Plex Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    --mono:'IBM Plex Mono', "SFMono-Regular", Consolas, monospace;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:var(--sans);background:var(--bg);color:var(--ink);-webkit-font-smoothing:antialiased}
+  .wrap{max-width:980px;margin:0 auto;padding:40px 20px 60px}
+
+  header{max-width:620px;margin:0 0 34px}
+  header h1{font-size:38px;line-height:1.08;letter-spacing:-0.02em;font-weight:600;margin:0 0 12px}
+  header p{font-size:16px;line-height:1.5;color:var(--ink-soft);margin:0}
+
+  .desk{display:grid;grid-template-columns:1fr 1.05fr;gap:22px;align-items:start}
+
+  /* ---------- ORDER SLIP (inputs) ---------- */
+  .slip{background:var(--panel);border:1px solid var(--rule);border-radius:6px;padding:26px 26px 22px}
+  .slip h2{font-size:14px;font-weight:600;color:var(--ink-soft);margin:0 0 18px;letter-spacing:0.01em}
+
+  .field{border-bottom:1px solid var(--rule);padding:10px 0 8px;display:flex;flex-direction:column;gap:2px}
+  .field:focus-within{border-color:var(--ink)}
+  .field label{font-size:12.5px;color:var(--ink-soft);display:flex;justify-content:space-between}
+  .field label .unit{color:var(--rule-strong)}
+  .field input, .field select{
+    border:0;background:transparent;font-family:var(--mono);font-size:19px;font-weight:500;
+    color:var(--ink);padding:3px 0;width:100%;outline:none;appearance:none;
+  }
+  .field select{font-family:var(--sans);font-size:15px;cursor:pointer}
+  .row2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+
+  .chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+  .chip{
+    font-family:var(--mono);font-size:12.5px;padding:5px 9px;border:1px solid var(--rule-strong);
+    border-radius:4px;background:transparent;color:var(--ink-soft);cursor:pointer;line-height:1;
+  }
+  .chip:hover{border-color:var(--ink);color:var(--ink)}
+  .chip.active{background:var(--ink);border-color:var(--ink);color:var(--receipt)}
+  .chips-label{font-size:11.5px;color:var(--rule-strong);margin-top:14px;margin-bottom:0}
+
+  .actions{display:flex;gap:10px;margin-top:22px}
+  button.reset{
+    flex:1;border:1px solid var(--rule-strong);background:transparent;color:var(--ink-soft);
+    border-radius:5px;padding:11px;font-family:var(--sans);font-size:14px;font-weight:500;cursor:pointer;
+  }
+  button.reset:hover{border-color:var(--ink);color:var(--ink)}
+
+  /* ---------- RECEIPT (output) ---------- */
+  .receipt-holder{position:relative}
+  .receipt{
+    background:var(--receipt);border:1px solid var(--rule);border-radius:2px;
+    padding:28px 26px 24px;position:relative;
+  }
+  .receipt::before{
+    content:"";display:block;height:10px;margin:-28px -26px 16px;
+    background-image:radial-gradient(circle at 9px 0, var(--bg) 6px, transparent 6.5px);
+    background-size:18px 10px;background-repeat:repeat-x;
+  }
+  .r-title{font-family:var(--mono);font-size:12.5px;color:var(--ink-soft);letter-spacing:0.04em;margin-bottom:14px;display:flex;justify-content:space-between}
+
+  .line{display:flex;align-items:baseline;gap:6px;font-family:var(--mono);font-size:14px;padding:5px 0;color:var(--ink)}
+  .line .label{white-space:nowrap;color:var(--ink-soft)}
+  .line .fill{flex:1;border-bottom:1px dotted var(--rule-strong);transform:translateY(-4px);min-width:8px}
+  .line .value{white-space:nowrap;font-weight:500}
+
+  .divider{border:0;border-top:1px dashed var(--rule-strong);margin:12px 0}
+
+  .total-line{display:flex;justify-content:space-between;align-items:baseline;margin:6px 0 2px}
+  .total-line .t-label{font-size:13px;color:var(--ink-soft)}
+  .total-line .t-value{font-family:var(--mono);font-size:38px;font-weight:600}
+  .total-line .t-value.profit{color:var(--profit)}
+  .total-line .t-value.loss{color:var(--loss)}
+
+  .batch-line{font-family:var(--mono);font-size:13px;color:var(--ink-soft);margin-bottom:14px}
+
+  .stamp{
+    position:absolute;top:56px;right:26px;
+    border:2.5px solid var(--profit);color:var(--profit);
+    border-radius:50%;width:84px;height:84px;
+    display:flex;align-items:center;justify-content:center;text-align:center;
+    font-family:var(--mono);font-size:11px;font-weight:700;letter-spacing:0.03em;
+    transform:rotate(-11deg);opacity:0.9;pointer-events:none;
+  }
+  .stamp.loss{border-color:var(--loss);color:var(--loss)}
+
+  .metrics{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:18px}
+  .metric{border:1px solid var(--rule);border-radius:4px;padding:12px}
+  .metric span{display:block;font-size:11.5px;color:var(--ink-soft);margin-bottom:4px}
+  .metric strong{font-family:var(--mono);font-size:16px;font-weight:600}
+
+  .copy-btn{
+    width:100%;margin-top:18px;border:1px solid var(--ink);background:var(--ink);color:var(--receipt);
+    border-radius:5px;padding:12px;font-family:var(--sans);font-size:14.5px;font-weight:600;cursor:pointer;
+  }
+  .copy-btn:hover{opacity:0.88}
+  .copy-btn.copied{background:var(--profit);border-color:var(--profit)}
+
+  .note{font-size:12.5px;color:var(--ink-soft);line-height:1.55;margin-top:22px;max-width:620px}
+  footer{text-align:center;color:var(--rule-strong);font-size:12px;margin-top:36px}
+
+  input:focus-visible, select:focus-visible, button:focus-visible{
+    outline:2px solid var(--gold);outline-offset:2px;
+  }
+
+  @media(max-width:760px){
+    .desk{grid-template-columns:1fr}
+    header h1{font-size:30px}
+    .stamp{width:68px;height:68px;font-size:9.5px;top:52px;right:20px}
+    .total-line .t-value{font-size:32px}
+  }
+  @media (prefers-reduced-motion: reduce){
+    *{transition:none !important}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <h1>Сколько денег останется после комиссии</h1>
+  <p>Впишите цену и расходы по заказу — справа появится чек с чистой прибылью, маржой и минимальной ценой продажи, при которой вы ещё не в минусе.</p>
+</header>
+
+<div class="desk">
+
+  <section class="slip">
+    <h2>ДАННЫЕ ЗАКАЗА</h2>
+
+    <div class="field">
+      <label>Цена продажи <span class="unit" id="unitPrice">₸</span></label>
+      <input id="price" type="number" min="0" inputmode="decimal" value="30000">
+    </div>
+
+    <div class="field">
+      <label>Себестоимость товара <span class="unit" id="unitCost">₸</span></label>
+      <input id="cost" type="number" min="0" inputmode="decimal" value="18000">
+    </div>
+
+    <div class="field">
+      <label>Комиссия маркетплейса <span class="unit">%</span></label>
+      <input id="commission" type="number" min="0" max="99" step="0.1" inputmode="decimal" value="10">
+    </div>
+    <p class="chips-label">Быстрый выбор — уточняйте точный процент в кабинете продавца:</p>
+    <div class="chips" id="chips">
+      <button type="button" class="chip" data-rate="5">5%</button>
+      <button type="button" class="chip active" data-rate="10">10%</button>
+      <button type="button" class="chip" data-rate="15">15%</button>
+      <button type="button" class="chip" data-rate="20">20%</button>
+      <button type="button" class="chip" data-rate="25">25%</button>
+    </div>
+
+    <div class="row2" style="margin-top:16px">
+      <div class="field">
+        <label>Доставка / логистика <span class="unit" id="unitDelivery">₸</span></label>
+        <input id="delivery" type="number" min="0" inputmode="decimal" value="1000">
+      </div>
+      <div class="field">
+        <label>Прочие расходы <span class="unit" id="unitOther">₸</span></label>
+        <input id="other" type="number" min="0" inputmode="decimal" value="500">
+      </div>
+    </div>
+
+    <div class="row2" style="margin-top:16px">
+      <div class="field">
+        <label>Количество, шт</label>
+        <input id="qty" type="number" min="1" step="1" inputmode="numeric" value="1">
+      </div>
+      <div class="field">
+        <label>Валюта</label>
+        <select id="currency">
+          <option value="₸" selected>₸ Тенге</option>
+          <option value="₽">₽ Рубль</option>
+          <option value="$">$ Доллар</option>
+          <option value="€">€ Евро</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="actions">
+      <button type="button" class="reset" id="resetBtn">Сбросить</button>
+    </div>
+  </section>
+
+  <div class="receipt-holder">
+    <section class="receipt" aria-live="polite">
+      <div class="stamp profit" id="stamp">ПРИБЫЛЬ</div>
+      <div class="r-title"><span>ЧЕК РАСЧЁТА</span><span id="qtyTag">1 шт</span></div>
+
+      <div class="line"><span class="label">Цена продажи</span><span class="fill"></span><span class="value" id="lPrice">30 000 ₸</span></div>
+      <div class="line"><span class="label">Себестоимость</span><span class="fill"></span><span class="value" id="lCost">18 000 ₸</span></div>
+      <div class="line"><span class="label">Комиссия (<span id="lRatePct">10</span>%)</span><span class="fill"></span><span class="value" id="lFee">3 000 ₸</span></div>
+      <div class="line"><span class="label">Доставка</span><span class="fill"></span><span class="value" id="lDelivery">1 000 ₸</span></div>
+      <div class="line"><span class="label">Прочее</span><span class="fill"></span><span class="value" id="lOther">500 ₸</span></div>
+
+      <hr class="divider">
+
+      <div class="line"><span class="label">Итого расходов</span><span class="fill"></span><span class="value" id="lTotal">22 500 ₸</span></div>
+
+      <div class="total-line">
+        <span class="t-label" id="tLabel">Прибыль с 1 шт</span>
+        <span class="t-value profit" id="tValue">7 500 ₸</span>
+      </div>
+      <div class="batch-line" id="batchLine" hidden></div>
+
+      <div class="metrics">
+        <div class="metric"><span>Маржа</span><strong id="mMargin">25.0%</strong></div>
+        <div class="metric"><span>Цена безубытка</span><strong id="mBreakEven">21 667 ₸</strong></div>
+      </div>
+
+      <button type="button" class="copy-btn" id="copyBtn">Скопировать расчёт</button>
+    </section>
+
+    <p class="note">Независимый учебный калькулятор, не связан ни с одним маркетплейсом. Реальный процент комиссии зависит от категории товара и условий конкретной площадки — проверяйте его в личном кабинете продавца перед тем, как назначать цену.</p>
+  </div>
+
+</div>
+
+<footer>Калькулятор прибыли продавца — учебный проект</footer>
+</div>
+
+<script>
+(function(){
+  const $ = id => document.getElementById(id);
+
+  const inputs = {
+    price: $('price'), cost: $('cost'), commission: $('commission'),
+    delivery: $('delivery'), other: $('other'), qty: $('qty'), currency: $('currency')
+  };
+
+  const defaults = { price:30000, cost:18000, commission:10, delivery:1000, other:500, qty:1, currency:'₸' };
+
+  const out = {
+    lPrice:$('lPrice'), lCost:$('lCost'), lFee:$('lFee'), lRatePct:$('lRatePct'),
+    lDelivery:$('lDelivery'), lOther:$('lOther'), lTotal:$('lTotal'),
+    tLabel:$('tLabel'), tValue:$('tValue'), batchLine:$('batchLine'),
+    mMargin:$('mMargin'), mBreakEven:$('mBreakEven'), stamp:$('stamp'), qtyTag:$('qtyTag')
+  };
+  const unitSpans = [$('unitPrice'), $('unitCost'), $('unitDelivery'), $('unitOther')];
+  const chips = Array.from(document.querySelectorAll('.chip'));
+
+  function num(el){
+    const v = parseFloat(el.value);
+    return Number.isFinite(v) && v >= 0 ? v : 0;
+  }
+
+  function money(value, symbol){
+    return Math.round(value).toLocaleString('ru-RU') + ' ' + symbol;
+  }
+
+  function calculate(){
+    const symbol = inputs.currency.value;
+    unitSpans.forEach(s => s.textContent = symbol);
+
+    const price = num(inputs.price);
+    const cost = num(inputs.cost);
+    const rate = Math.min(num(inputs.commission), 99) / 100;
+    const delivery = num(inputs.delivery);
+    const other = num(inputs.other);
+    const qty = Math.max(1, Math.round(num(inputs.qty) || 1));
+
+    const fee = price * rate;
+    const totalCostPerUnit = cost + fee + delivery + other;
+    const profitPerUnit = price - totalCostPerUnit;
+    const margin = price > 0 ? (profitPerUnit / price) * 100 : 0;
+    const breakEven = rate < 1 ? (cost + delivery + other) / (1 - rate) : 0;
+    const isProfit = profitPerUnit >= 0;
+
+    out.lPrice.textContent = money(price, symbol);
+    out.lCost.textContent = money(cost, symbol);
+    out.lRatePct.textContent = (rate * 100).toFixed(1).replace(/\.0$/, '');
+    out.lFee.textContent = money(fee, symbol);
+    out.lDelivery.textContent = money(delivery, symbol);
+    out.lOther.textContent = money(other, symbol);
+    out.lTotal.textContent = money(totalCostPerUnit, symbol);
+
+    out.tLabel.textContent = qty > 1 ? 'Прибыль с 1 шт' : 'Прибыль';
+    out.tValue.textContent = money(profitPerUnit, symbol);
+    out.tValue.className = 't-value ' + (isProfit ? 'profit' : 'loss');
+
+    out.qtyTag.textContent = qty + ' шт';
+
+    if (qty > 1){
+      out.batchLine.hidden = false;
+      out.batchLine.textContent = 'Партия из ' + qty + ' шт: ' + money(profitPerUnit * qty, symbol) +
+        ' (выручка ' + money(price * qty, symbol) + ')';
+    } else {
+      out.batchLine.hidden = true;
+    }
+
+    out.mMargin.textContent = margin.toFixed(1) + '%';
+    out.mBreakEven.textContent = money(breakEven, symbol);
+
+    out.stamp.textContent = isProfit ? 'ПРИБЫЛЬ' : 'УБЫТОК';
+    out.stamp.className = 'stamp ' + (isProfit ? 'profit' : 'loss');
+  }
+
+  Object.values(inputs).forEach(el => {
+    el.addEventListener('input', calculate);
+    el.addEventListener('change', calculate);
+  });
+
+  chips.forEach(chip => {
+    chip.addEventListener('click', () => {
+      inputs.commission.value = chip.dataset.rate;
+      chips.forEach(c => c.classList.toggle('active', c === chip));
+      calculate();
+    });
+  });
+  inputs.commission.addEventListener('input', () => {
+    const v = inputs.commission.value;
+    chips.forEach(c => c.classList.toggle('active', c.dataset.rate === v));
+  });
+
+  $('resetBtn').addEventListener('click', () => {
+    Object.keys(defaults).forEach(key => { inputs[key].value = defaults[key]; });
+    chips.forEach(c => c.classList.toggle('active', c.dataset.rate === String(defaults.commission)));
+    calculate();
+  });
+
+  $('copyBtn').addEventListener('click', async () => {
+    const symbol = inputs.currency.value;
+    const text = 'Расчёт прибыли\n' +
+      'Цена продажи: ' + out.lPrice.textContent + '\n' +
+      'Себестоимость: ' + out.lCost.textContent + '\n' +
+      'Комиссия: ' + out.lFee.textContent + '\n' +
+      'Доставка: ' + out.lDelivery.textContent + '\n' +
+      'Прочее: ' + out.lOther.textContent + '\n' +
+      'Итого расходов: ' + out.lTotal.textContent + '\n' +
+      out.tLabel.textContent + ': ' + out.tValue.textContent + '\n' +
+      'Маржа: ' + out.mMargin.textContent + '\n' +
+      'Цена безубытка: ' + out.mBreakEven.textContent;
+    try {
+      await navigator.clipboard.writeText(text);
+      const btn = $('copyBtn');
+      const original = btn.textContent;
+      btn.textContent = 'Скопировано ✓';
+      btn.classList.add('copied');
+      setTimeout(() => { btn.textContent = original; btn.classList.remove('copied'); }, 1600);
+    } catch (e) {
+      alert(text);
+    }
+  });
+
+  calculate();
+})();
+</script>
+</body>
+</html>
